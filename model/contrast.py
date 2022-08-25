@@ -480,12 +480,13 @@ class ContrastModel(BertPreTrainedModel):
 
         for k in range(outputs[7].shape[0]):
             # reason for it has to be for loop: embedding without padding of different samples has different size, so it can not be operated as 3d-tensor
+            #in this for loop, every sample from the batchis used for classification and contrastive loss
             embedding_without_padding = outputs[6][k, 0:int(index_of_padding[k]),:]  # embedding without padding x*768, 2D tensor
 
-
+            #attention mechanism, compute the attention score
             token_label_attention_score = F.softmax(torch.matmul(embedding_without_padding, label_embeddings[0].T), dim=0)
 
-
+            #projections of current into all label spaces
             final_tensor = torch.matmul(token_label_attention_score.T, embedding_without_padding)
 
             classfierresult = self.classifier(final_tensor.view(1, -1)).to('cuda:0')
@@ -505,6 +506,8 @@ class ContrastModel(BertPreTrainedModel):
             else:
                 loss_fct = nn.BCEWithLogitsLoss()
                 target = labels.to(torch.float32)
+
+            #loss here is the original data loss
             if self.cls_loss:
                 if self.num_labels == 1:
                     #  We are doing regression
