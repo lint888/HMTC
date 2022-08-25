@@ -70,11 +70,8 @@ class SupConLoss(nn.Module):
 
         # for numerical stability
         logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
-        # print("logits_max")
-        # print(logits_max)
         logits = anchor_dot_contrast - logits_max.detach()
-        # print("logits")
-        # print(logits)
+
 
         # mask-out self-contrast cases
         logits_mask = torch.scatter(
@@ -83,12 +80,9 @@ class SupConLoss(nn.Module):
             torch.arange(batch_size).view(-1, 1).to(device),
             0
         )
-        # print("logits_mask")
-        # print(logits_mask)
-        #print(anchor_dot_contrast)
+
         mask = mask * logits_mask
-        # print("mask")
-        # print(mask)
+
 
         # compute log_prob
         exp_logits = torch.exp(logits) * logits_mask
@@ -106,7 +100,7 @@ class SupConLoss(nn.Module):
         #loss = loss.nanmean()
 
         if torch.isnan(loss):
-            print("wrong")
+            print("Nan loss.")
 
         return loss
 
@@ -122,19 +116,26 @@ class contrastLoss(nn.Module):
 
 
     def forward(self, batch,the_memoryBank,ifTorFSample,num_label,position_indicator,memoryBANKCounter):
+        # args:
+        #     ifTorFSample is the ground truth label
+        #     batch is the projections of samples
+        #     the_memoryBank is the memory bank
+        #     num_label is number of labels
+        #     position_indicator is used for the case that memory bank is still not fully filled with projections
+        #     memoryBANKCounter tells how many samples have been stored into the memory bank.
+
 
         final_loss=0
         i=0
         ifTorFSample_reshaped = ifTorFSample.view(num_label, -1)
         temporal = torch.cat((batch, ifTorFSample_reshaped), dim=1)
+        #for loop for num_label is used for: takes the i-th projection of the current batch and builds input with other projections into i-th label space from memory bank for the contrastive loss.
         if memoryBANKCounter <= the_memoryBank.shape[1]/num_label:
             for i in range(num_label):
-                # print("temporal222222222222222")
-                # print(temporal[i])
+
                 same_label_from_memorybank = ((the_memoryBank[:position_indicator, -1] == i).nonzero(as_tuple=True)[0])
                 extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0,same_label_from_memorybank)
-                # print("extracted")
-                # print(extracted_samples_from_memorybank)
+
 
 
                 pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
@@ -150,147 +151,12 @@ class contrastLoss(nn.Module):
             for i in range(num_label):
                 same_label_from_memorybank = ((the_memoryBank[:, -1] == i).nonzero(as_tuple=True)[0])
                 extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0, same_label_from_memorybank)
-                # print("extracted")
-                # print(extracted_samples_from_memorybank)
+
 
                 pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
 
                 suploss = self.supcontrast_loss(pairs_for_contrastive[:, :-1], pairs_for_contrastive[:, -1])
                 if not torch.isnan(suploss):
                     final_loss = final_loss + suploss
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # ifTorFSample_reshaped = ifTorFSample.view(num_label, -1)
-        #
-        # temporal = torch.cat((batch,ifTorFSample_reshaped),dim=1)
-        # # print("temporal")
-        # # print(temporal)
-        # if memoryBANKCounter <= 20:
-        #     for i in range(num_label):
-        #         # print("temporal222222222222222")
-        #         # print(temporal[i])
-        #         same_label_from_memorybank = ((the_memoryBank[:position_indicator, -1] == i).nonzero(as_tuple=True)[0])
-        #         extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0,same_label_from_memorybank)
-        #         # print("extracted")
-        #         # print(extracted_samples_from_memorybank)
-        #
-        #
-        #         pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
-        #
-        #
-        #         suploss = self.supcontrast_loss(pairs_for_contrastive[:, :-1], pairs_for_contrastive[:, -1])
-        #         if not torch.isnan(suploss):
-        #             final_loss = final_loss + suploss
-        #     print("final loss")
-        #     print(final_loss)
-        #
-        #
-        # else:
-        #     for i in range(num_label):
-        #         same_label_from_memorybank = ((the_memoryBank[:, -1] == i).nonzero(as_tuple=True)[0])
-        #
-        #         extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0,same_label_from_memorybank)
-        #
-        #
-        #         pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
-        #
-        #
-        #         #if (pairs_for_contrastive.shape[0] > 2):
-        #         suploss = self.supcontrast_loss(pairs_for_contrastive[:, :-1], pairs_for_contrastive[:, -1])
-        #         if not torch.isnan(suploss):
-        #             final_loss = final_loss + suploss
-        #     print("final loss 2")
-        #     print(final_loss)
-
-
-
-
-
-        #use memory bank for contrastive loss
-        # if memoryBANKCounter<=200:
-        #     for i in range(num_label):
-        #
-        #         if (ifTorFSample[i] == 1):
-        #
-        #             Instance_inmemorybank = (the_memoryBank[:position_indicator, -1] == i).nonzero(as_tuple=True)[0]
-        #             positivesamples = torch.index_select(the_memoryBank, 0, Instance_inmemorybank)
-        #             Instance_inmemorybank_2 = (positivesamples[:position_indicator, -2] == 1).nonzero(as_tuple=True)[0]
-        #             realPos = torch.index_select(positivesamples, 0, Instance_inmemorybank_2)
-        #
-        #             if realPos.shape[0] != 0:
-        #                 Closs = Closs + self.contrast_lossfuc(torch.vstack((batch[i].repeat(realPos.shape[0], 1), realPos[:, :768])))
-        #
-        #             # for ii in realPos:
-        #             #
-        #             #
-        #             #     Closs = Closs + self.contrast_lossfuc(torch.vstack((batch[i],ii[:768])))
-        #         else:
-        #
-        #             Instance_inmemorybank = (the_memoryBank[:position_indicator, -1] == i).nonzero(as_tuple=True)[0]
-        #             positivesamples = torch.index_select(the_memoryBank, 0, Instance_inmemorybank)
-        #             Instance_inmemorybank_2 = (positivesamples[:position_indicator, -2] == 1).nonzero(as_tuple=True)[0]
-        #             realPos = torch.index_select(positivesamples, 0, Instance_inmemorybank_2)
-        #
-        #             if realPos.shape[0] != 0:
-        #                 invers_loss = invers_loss + self.contrast_lossfuc(torch.vstack((batch[i].repeat(realPos.shape[0], 1), realPos[:, :768])))
-        #             # for ii in realPos:
-        #             #
-        #             #     invers_loss = invers_loss + self.contrast_lossfuc(torch.vstack((batch[i],ii[:768])))
-        # else:
-        #     for i in range(num_label):
-        #         if (ifTorFSample[i] == 1):
-        #             Instance_inmemorybank = (the_memoryBank[:, -1] == i).nonzero(as_tuple=True)[0]
-        #             positivesamples = torch.index_select(the_memoryBank, 0, Instance_inmemorybank)
-        #             Instance_inmemorybank_2 = (positivesamples[:, -2] == 1).nonzero(as_tuple=True)[0]
-        #             realPos = torch.index_select(positivesamples, 0, Instance_inmemorybank_2)
-        #
-        #             if realPos.shape[0] != 0:
-        #                 Closs = Closs + self.contrast_lossfuc(torch.vstack((batch[i].repeat(realPos.shape[0], 1), realPos[:, :768])))
-        #             # for ii in realPos:
-        #             #     Closs = Closs + self.contrast_lossfuc(torch.vstack((batch[i],ii[:768])))
-        #         else:
-        #             Instance_inmemorybank = (the_memoryBank[:, -1] == i).nonzero(as_tuple=True)[0]
-        #             positivesamples = torch.index_select(the_memoryBank, 0, Instance_inmemorybank)
-        #             Instance_inmemorybank_2 = (positivesamples[:, -2] == 1).nonzero(as_tuple=True)[0]
-        #             realPos = torch.index_select(positivesamples, 0, Instance_inmemorybank_2)
-        #
-        #             if realPos.shape[0] != 0:
-        #                 invers_loss = invers_loss + self.contrast_lossfuc(torch.vstack((batch[i].repeat(realPos.shape[0], 1), realPos[:, :768])))
-        #             # for ii in realPos:
-        #             #     invers_loss = invers_loss + self.contrast_lossfuc(torch.vstack((batch[i],ii[:768])))
-        #
-        # final_loss = Closs - invers_loss
 
         return final_loss

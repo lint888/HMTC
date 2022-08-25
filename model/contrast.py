@@ -464,7 +464,7 @@ class ContrastModel(BertPreTrainedModel):
             embedding_weight=contrast_mask,
 
         )
-
+        #takes the token embedding without padding from the 512*768 embedding.
         index_of_padding = torch.rand(outputs[7].shape[0], 1)
         for i in range(outputs[7].shape[0]):
             temporal = (outputs[7][i] == 0).nonzero()
@@ -480,10 +480,9 @@ class ContrastModel(BertPreTrainedModel):
 
         for k in range(outputs[7].shape[0]):
             # reason for it has to be for loop: embedding without padding of different samples has different size, so it can not be operated as 3d-tensor
-            embedding_without_padding = outputs[6][k, 0:int(index_of_padding[k]),:]  # embedding without padding 210*768, 2D tensor
+            embedding_without_padding = outputs[6][k, 0:int(index_of_padding[k]),:]  # embedding without padding x*768, 2D tensor
 
-            # label embedding size = 1 * 141 * 768
-            # 1
+
             token_label_attention_score = F.softmax(torch.matmul(embedding_without_padding, label_embeddings[0].T), dim=0)
 
 
@@ -492,6 +491,7 @@ class ContrastModel(BertPreTrainedModel):
             classfierresult = self.classifier(final_tensor.view(1, -1)).to('cuda:0')
 
             logits[k, :] = classfierresult.view(1, -1)
+            #in the training status, use memory bank to calculate contrastive loss
             if self.training:
                 instanceMemoryBank, pointer = self.memoryBank(final_tensor, labels[k],self.num_labels)  # pointer indicates the starting position of the next batch in memory bank
                 Contrast_Loss_2 = Contrast_Loss_2 + self.CFLoss(final_tensor, instanceMemoryBank.T, labels[k], self.num_labels, pointer, memorybank_counter)
@@ -514,7 +514,7 @@ class ContrastModel(BertPreTrainedModel):
                     loss += loss_fct(logits.view(-1, self.num_labels).to('cuda:0'), target.to('cuda:0'))
 
             
-            
+            #final loss is the combination of original data loss and contrastive loss
             if contrastive_loss is not None and self.contrast_loss:
                 loss += contrastive_loss * self.lamb
 

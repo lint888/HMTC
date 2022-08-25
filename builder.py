@@ -62,9 +62,11 @@ class MoCo(nn.Module):
             CLabel: indicates if the sample actually own this label. (true or false) 倒数第二列是label是true还是false
             NumofLabel: index of the projection. for every embedding_batch it is 0...number of labels. 最后一列是index
         Output:
-            logits, targets
+            memory bank
+            position of the starting for the next time storing.
 
         """
+        #two new columns are added into the tensor so that locations of projections in label spaces can be esaily identified.
         embedding_batch_1 = torch.cat((embedding_batch.view(NumofLabel, 768), CLabel.view(NumofLabel, 1).to('cuda:0')),1)
 
         embedding_batch = torch.cat((embedding_batch_1, torch.arange(NumofLabel).view(NumofLabel, 1).to('cuda:0')), 1)
@@ -73,7 +75,7 @@ class MoCo(nn.Module):
 
 
 
-        # dequeue and enqueue
+        # dequeue and enqueue, put the new sample projections into memory bank.
         self._dequeue_and_enqueue(embedding_batch)
 
 
