@@ -11,7 +11,7 @@ class MoCo(nn.Module):
     def __init__(self, dim=770, K=141*20, m=0.999, T=0.07, mlp=False):
         """
         dim: feature dimension (default: 128)
-        K: queue size; number of negative keys (default: 65536)
+        K: queue size; K can be changed in the future work
         m: moco momentum of updating key encoder (default: 0.999)
         T: softmax temperature (default: 0.07)
         """
@@ -59,8 +59,8 @@ class MoCo(nn.Module):
     def forward(self, embedding_batch, CLabel,NumofLabel):
         """
         Input:
-            CLabel: indicates if the sample actually own this label. (true or false) 倒数第二列是label是true还是false
-            NumofLabel: index of the projection. for every embedding_batch it is 0...number of labels. 最后一列是index
+            CLabel: indicates if the sample actually own this label. (1 or 0)
+            NumofLabel: index of the projection. for every embedding_batch it is 0...number of labels.
         Output:
             memory bank
             position of the starting for the next time storing.

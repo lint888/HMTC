@@ -132,16 +132,19 @@ class contrastLoss(nn.Module):
         #for loop for num_label is used for: takes the i-th projection of the current batch and builds input with other projections into i-th label space from memory bank for the contrastive loss.
         if memoryBANKCounter <= the_memoryBank.shape[1]/num_label:
             for i in range(num_label):
-
+                #takes all the projections in i-th label space from memory bank out
+                #if the memory bank is not fully filled with projections, the search of the projections should end at position_indicator
                 same_label_from_memorybank = ((the_memoryBank[:position_indicator, -1] == i).nonzero(as_tuple=True)[0])
                 extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0,same_label_from_memorybank)
 
 
-
+                #build input for the contrastive loss
                 pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
 
 
                 suploss = self.supcontrast_loss(pairs_for_contrastive[:, :-1], pairs_for_contrastive[:, -1])
+
+
                 if not torch.isnan(suploss):
                     final_loss = final_loss + suploss
 
@@ -149,10 +152,11 @@ class contrastLoss(nn.Module):
 
         else:
             for i in range(num_label):
+                # takes all the projections in i-th label space from memory bank out
                 same_label_from_memorybank = ((the_memoryBank[:, -1] == i).nonzero(as_tuple=True)[0])
                 extracted_samples_from_memorybank = torch.index_select(the_memoryBank, 0, same_label_from_memorybank)
 
-
+                # build input for the contrastive loss
                 pairs_for_contrastive = torch.vstack((temporal[i], extracted_samples_from_memorybank[:, :-1]))
 
                 suploss = self.supcontrast_loss(pairs_for_contrastive[:, :-1], pairs_for_contrastive[:, -1])
