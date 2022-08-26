@@ -67,9 +67,10 @@ class MoCo(nn.Module):
 
         """
         #two new columns are added into the tensor so that locations of projections in label spaces can be esaily identified.
-        embedding_batch_1 = torch.cat((embedding_batch.view(NumofLabel, 768), CLabel.view(NumofLabel, 1).to('cuda:0')),1)
+        embedding_batch_with_label_added = torch.cat((embedding_batch.view(NumofLabel, 768), CLabel.view(NumofLabel, 1).to('cuda:0')),1)
 
-        embedding_batch = torch.cat((embedding_batch_1, torch.arange(NumofLabel).view(NumofLabel, 1).to('cuda:0')), 1)
+        #the following tensor is the final tensor with both label and label indexes added in
+        embedding_batch = torch.cat((embedding_batch_with_label_added, torch.arange(NumofLabel).view(NumofLabel, 1).to('cuda:0')), 1)
 
 
 
